@@ -59,7 +59,6 @@ class Generator
         $jsBody = '';
 
         foreach ($arrayWithPaths as $module => $path) {
-            var_dump(base_path());exit();
             $dir = new DirectoryIterator(base_path() . $path);
 
             foreach ($dir as $fileinfo) {
