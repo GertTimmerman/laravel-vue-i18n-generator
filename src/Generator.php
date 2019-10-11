@@ -111,9 +111,9 @@ class Generator
                     }
 
                     if (isset($locales[$noExt])) {
-                        $locales[$noExt] = array_merge($local, $locales[$noExt]);
+                        $locales[$noExt] = array_merge($translations, $locales[$noExt]);
                     } else {
-                        $locales[$noExt] = $local;
+                        $locales[$noExt] = $translations;
                     }
                 }
             }
