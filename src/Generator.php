@@ -36,57 +36,86 @@ class Generator
     }
 
     /**
-     * @param string $path
+     * @param array|string $paths
      * @param string $format
      * @param boolean $withVendor
      * @return string
      * @throws Exception
      */
-    public function generateFromPath($path, $format = 'es6', $withVendor = false, $langFiles = [])
+    public function generateFromPath($paths, $format = 'es6', $withVendor = false, $langFiles = [])
     {
-        if (!is_dir($path)) {
-            throw new Exception('Directory not found: ' . $path);
+        if (is_string($paths)) {
+            $arrayWithPaths[] = $paths;
+        } elseif( is_array($paths) ) {
+            $arrayWithPaths = $paths;
+        } else {
+            throw new Exception('Array or String expected, ' . gettype($paths) . ' given');
         }
 
         $this->langFiles = $langFiles;
 
         $locales = [];
         $files = [];
-        $dir = new DirectoryIterator($path);
         $jsBody = '';
-        foreach ($dir as $fileinfo) {
-            if (!$fileinfo->isDot()) {
-                if(!$withVendor
-                    && in_array($fileinfo->getFilename(), array_merge(['vendor'], $this->config['excludes']))
-                ) {
-                    continue;
-                }
 
-                $files[] = $fileinfo->getRealPath();
+        foreach ($arrayWithPaths as $module => $path) {
+            var_dump(base_path());exit();
+            $dir = new DirectoryIterator(base_path() . $path);
+
+            foreach ($dir as $fileinfo) {
+                if (!$fileinfo->isDot()) {
+                    if(!$withVendor && in_array($fileinfo->getFilename(), array_merge(['vendor'], $this->config['excludes']))) {
+                        continue;
+                    }
+    
+                    if( is_string($module) ){
+                        $files[$module][] = $fileinfo->getRealPath();
+                    } else {
+                        $files[] = $fileinfo->getRealPath();
+                    }
+                }
             }
         }
+
         asort($files);
 
-        foreach ($files as $fileName) {
-            $fileinfo = new \SplFileInfo($fileName);
+        foreach ($files as $module => $fileName) {
 
-            $noExt = $this->removeExtension($fileinfo->getFilename());
-            if ($noExt !== '') {
-                if (class_exists('App')) {
-                    App::setLocale($noExt);
-                }
+            if( !is_array($fileName) ) {
+                $fileNamesToLoop[] = $fileName;
+            } else {
+                $fileNamesToLoop = $fileName;
+            }
 
-                if ($fileinfo->isDir()) {
-                    $local = $this->allocateLocaleArray($fileinfo->getRealPath());
-                } else {
-                    $local = $this->allocateLocaleJSON($fileinfo->getRealPath());
-                    if ($local === null) continue;
-                }
+            foreach ($fileNamesToLoop as $fileName) {
+                $fileinfo = new \SplFileInfo($fileName);
 
-                if (isset($locales[$noExt])) {
-                    $locales[$noExt] = array_merge($local, $locales[$noExt]);
-                } else {
-                    $locales[$noExt] = $local;
+                $noExt = $this->removeExtension($fileinfo->getFilename());
+                if ($noExt !== '') {
+                    if (class_exists('App')) {
+                        App::setLocale($noExt);
+                    }
+
+                    if ($fileinfo->isDir()) {
+                        $local = $this->allocateLocaleArray($fileinfo->getRealPath());
+                    } else {
+                        $local = $this->allocateLocaleJSON($fileinfo->getRealPath());
+                        if ($local === null) {
+                            continue;
+                        }
+                    }
+
+                    if( is_string($module) && !empty($module) ) {
+                        $translations[$module] = $local;
+                    } else {
+                        $translations = $local;
+                    }
+
+                    if (isset($locales[$noExt])) {
+                        $locales[$noExt] = array_merge($local, $locales[$noExt]);
+                    } else {
+                        $locales[$noExt] = $local;
+                    }
                 }
             }
         }

@@ -27,7 +27,7 @@ class GenerateInclude extends Command
      */
     public function handle()
     {
-        $root = base_path() . config('vue-i18n-generator.langPath');
+        $root = config('vue-i18n-generator.langPath');
         $config = config('vue-i18n-generator');
 
         // options
